@@ -20,53 +20,56 @@ const users = require('./auth.model');
 // létrehozunk egy payload-ot
 // létrehozunk egy jwt-t a payload alapján, amit a res.json()-al visszaküldünk a felhasználónak
 
+// helper function(s)
+const createTokenSendResponse = (user, res, next) => {
+  const { password, ...payload } = user;
+
+  jwt.sign(payload, process.env.SECRET, { expiresIn: '1h' }, (error, token) => {
+    if (error) return next(error);
+
+    res.json({ token });
+  });
+};
+
+const checkUser = async (req, res, next) => {
+  try {
+    const { user } = req;
+    res.json({ user });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const signup = async (req, res, next) => {
   try {
     const {
       body: { email, password },
     } = req;
 
-    const result = await users.findOne({ email });
+    const user = await users.findOne({ email });
 
-    if (result) {
+    if (user) {
       res.status(409);
-      throw new Error('User already exists.');
+      throw new Error('User already exists with the given email.');
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const newUser = {
+    const newUserPayload = {
       email,
       password: hashedPassword,
       role: 'user',
-      active: true,
       createdAt: new Date().getTime(),
-      updatedAt: new Date().getTime(),
+      lastLogin: new Date().getTime(),
+      updatedAt: 0,
+      active: true,
     };
 
-    const newUserrrr = await users.insert(newUser);
+    const newUser = await users.insert(newUserPayload);
+    if (!newUser)
+      throw new Error('Failed to create user. Please try again later!');
 
-    if (!newUser) throw new Error('Failed to create user');
-
-    const payload = {
-      _id: newUser._id,
-      email: newUser.email,
-      role: newUser.role,
-      active: newUser.active,
-      createdAt: newUser.createdAt,
-      updatedAt: newUser.updatedAt,
-    };
-
-    jwt.sign(
-      payload,
-      process.env.SECRET,
-      { expiresIn: '1h' },
-      (error, token) => {
-        if (!error) res.json({ token });
-
-        return next(error);
-      },
-    );
+    createTokenSendResponse(newUser, res, next);
   } catch (error) {
     next(error);
   }
@@ -78,35 +81,26 @@ const login = async (req, res, next) => {
       body: { email, password },
     } = req;
 
-    const result = await users.findOne({ email });
+    const user = await users.findOne({ email });
 
-    if (!result) throw new Error('Nincs ilyen emaillel felhasznalo');
+    if (!user) {
+      res.status(403);
+      // todo | set  same error message as below to prevent users from bruteforcing valid emails
+      throw new Error(
+        'User does not exists with the given email. Please try again!',
+      );
+    }
 
-    const correctPassword = await bcrypt.compare(password, result.password);
-    if (!correctPassword) throw new Error('bad password');
+    const correctPassword = await bcrypt.compare(password, user.password);
+    if (!correctPassword) {
+      res.status(403);
+      throw new Error('Invalid login credentials. Please try again!');
+    }
 
-    const payload = {
-      _id: result._id,
-      email: result.email,
-      role: result.role,
-      active: result.active,
-      createdAt: result.createdAt,
-      updatedAt: result.updatedAt,
-    };
-
-    jwt.sign(
-      payload,
-      process.env.SECRET,
-      { expiresIn: '1h' },
-      (error, token) => {
-        if (!error) res.json({ token });
-
-        return next(error);
-      },
-    );
+    createTokenSendResponse(user, res, next);
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { signup, login };
+module.exports = { checkUser, signup, login };
