@@ -33,6 +33,7 @@ const validateSchema = (schema) => async (req, res, next) => {
 
     next();
   } catch (error) {
+    res.status(406);
     next(error);
   }
 };

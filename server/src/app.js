@@ -5,6 +5,7 @@ const cors = require('cors');
 const middlewares = require('./app.middlewares');
 const authMiddlewares = require('./api/auth/auth.middlewares');
 const auth = require('./api/auth/auth.routes');
+const notes = require('./api/notes/notes.routes');
 
 // create express app instance
 const app = express();
@@ -18,6 +19,7 @@ app.use(authMiddlewares.checkTokenSetUser);
 
 // routes
 app.use('/api/auth', auth);
+app.use('/api/notes', authMiddlewares.isLoggedIn, notes);
 
 // error handler
 app.use(middlewares.errorHandler);

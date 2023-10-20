@@ -64,7 +64,18 @@ const login = async (req, res, next) => {
       throw new Error('Invalid login credentials. Please try again!');
     }
 
-    createTokenSendResponse(user, res, next);
+    // todo | update user.lastLogin to new Date().getTime()
+
+    const updatedUser = await users.findOneAndUpdate(
+      { _id: user._id },
+      {
+        $set: {
+          lastLogin: new Date().getTime(),
+        },
+      },
+    );
+
+    createTokenSendResponse(updatedUser, res, next);
   } catch (error) {
     next(error);
   }
