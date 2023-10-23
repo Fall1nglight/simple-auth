@@ -19,7 +19,7 @@ app.use(authMiddlewares.checkTokenSetUser);
 
 // routes
 app.use('/api/auth', auth);
-app.use('/api/notes', authMiddlewares.isLoggedIn, notes);
+app.use('/api/notes', notes);
 
 // error handler
 app.use(middlewares.errorHandler);

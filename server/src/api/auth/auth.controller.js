@@ -4,9 +4,9 @@ const users = require('./auth.model');
 
 // helper function(s)
 const createTokenSendResponse = (user, res, next) => {
-  const { password, ...payload } = user;
+  const { password, iat, exp, ...payload } = user;
 
-  jwt.sign(payload, process.env.SECRET, { expiresIn: '1h' }, (error, token) => {
+  jwt.sign(payload, process.env.SECRET, { expiresIn: '6m' }, (error, token) => {
     if (error) return next(error);
 
     res.json({ token });
@@ -17,6 +17,45 @@ const checkUser = async (req, res, next) => {
   try {
     const { user } = req;
     res.json({ user });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const tokens = new Set();
+
+const refreshToken = async (req, res, next) => {
+  try {
+    const {
+      headers: { authorization: rawToken },
+      user,
+    } = req;
+
+    const prefix = 'Bearer ';
+    const [, token] = rawToken.split(prefix);
+
+    if (tokens.has(token))
+      throw new Error(
+        'You have already claimed a refresh token. Please try again later!',
+      );
+
+    // calculate exp date
+    const currentTime = new Date().getTime();
+    const expiresAt = user.exp * 1000;
+    const remainingMilis = expiresAt - currentTime;
+    const remainingMins = remainingMilis / 60000;
+
+    console.log({ remainingMins });
+
+    if (remainingMins > 5)
+      throw new Error(
+        'Token is too fresh to require a refresh token. Please try again later!',
+      );
+
+    tokens.add(token);
+    setTimeout(() => tokens.delete(token), remainingMilis);
+
+    createTokenSendResponse(user, res, next);
   } catch (error) {
     next(error);
   }
@@ -81,4 +120,4 @@ const login = async (req, res, next) => {
   }
 };
 
-module.exports = { checkUser, signup, login };
+module.exports = { checkUser, refreshToken, signup, login };

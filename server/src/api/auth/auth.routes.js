@@ -8,6 +8,8 @@ const router = express.Router();
 // routes
 router.get('/checkuser', controller.checkUser);
 
+router.get('/refresh-token', middlewares.isLoggedIn, controller.refreshToken);
+
 router.post(
   '/signup',
   middlewares.validateSchema(schemas.signup),

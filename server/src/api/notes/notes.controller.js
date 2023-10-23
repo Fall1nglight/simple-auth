@@ -87,15 +87,17 @@ const post = async (req, res, next) => {
 
 const patch = async (req, res, next) => {
   try {
-    const { body: note } = req;
-    const { _id, ...notePayload } = note;
+    const {
+      body: note,
+      params: { id: _id },
+    } = req;
 
     const updatedNote = await notes.findOneAndUpdate(
       {
         _id,
       },
       {
-        $set: { ...notePayload, updatedAt: new Date().getTime() },
+        $set: { ...note, updatedAt: new Date().getTime() },
       },
     );
 
