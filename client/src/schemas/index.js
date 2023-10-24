@@ -21,10 +21,19 @@ const upload = Joi.object({
   public: Joi.boolean().required()
 });
 
+const edit = Joi.object({
+  title: Joi.string().min(3).max(32),
+  body: Joi.string().min(3).max(32),
+  public: Joi.boolean()
+})
+  .or('title', 'body', 'public')
+  .required();
+
 const schemas = {
   login,
   signup,
-  upload
+  upload,
+  edit
 };
 
 export default schemas;

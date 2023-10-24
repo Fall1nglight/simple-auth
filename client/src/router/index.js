@@ -8,6 +8,7 @@ import ProfileView from '../views/ProfileView.vue';
 import { useAuthStore } from '../stores/auth';
 import { storeToRefs } from 'pinia';
 import { useNoteStore } from '../stores/note';
+import axios from 'axios';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -51,17 +52,54 @@ const router = createRouter({
 
 router.beforeEach(async (to, from) => {
   const authStore = useAuthStore();
-  const { isLoggedIn, hasToken } = storeToRefs(authStore);
+  const { isLoggedIn, hasToken, getExpDate } = storeToRefs(authStore);
 
-  // implement refresh token
-
-  if (!isLoggedIn.value && hasToken.value) {
+  if (hasToken.value && !isLoggedIn.value) {
     await authStore.checkUser();
     if (!isLoggedIn.value) authStore.resetToken();
   }
 
+  console.log('logged in: ' + isLoggedIn.value);
+  console.log('has token:' + hasToken.value);
+
   if (to.meta.requiresAuth && !isLoggedIn.value) return { name: 'home' };
   if (to.meta.preventLoggedIn && isLoggedIn.value) return { name: 'home' };
+
+  if (isLoggedIn.value) {
+    // refresh token
+    const currentTime = new Date().getTime();
+    const timeDiff = getExpDate.value - currentTime;
+    const timeDiffInMins = timeDiff / 60000;
+
+    console.log(`Remaining time: ${timeDiffInMins}`);
+    console.log(`Time till refresh ${timeDiffInMins - 5}`);
+
+    if (timeDiffInMins <= 0) {
+      console.log('Token has expired, logging out...');
+      authStore.resetToken();
+    }
+
+    if (timeDiffInMins <= 5) {
+      // request refresh token
+      try {
+        console.log('Token is about to expire, requesting a new one...');
+
+        const response = await axios.get('http://localhost:3000/api/auth/refresh-token', {
+          headers: {
+            Authorization: `Bearer ${authStore.token}`
+          }
+        });
+
+        if (!response.data.token) return;
+
+        authStore.setToken(response.data.token);
+
+        console.log(`Old token was replaced with: ${response.data.token}`);
+      } catch (error) {
+        console.error({ error });
+      }
+    }
+  }
 });
 
 router.beforeResolve(async (to) => {

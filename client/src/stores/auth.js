@@ -25,6 +25,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = computed(() => !!user.value._id);
   const isAdmin = computed(() => user.value.role === 'admin');
   const hasToken = computed(() => !!token.value);
+  const getExpDate = computed(() => user.value.exp * 1000);
 
   // actions
   function setToken(newToken) {
@@ -112,6 +113,8 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     isLoggedIn,
     isAdmin,
-    hasToken
+    hasToken,
+    getExpDate,
+    setToken
   };
 });
