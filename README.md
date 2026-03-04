@@ -1,6 +1,4 @@
 # simple-auth
-[![Ask DeepWiki](https://devin.ai/assets/askdeepwiki.png)](https://deepwiki.com/Fall1nglight/simple-auth)
-
 `simple-auth` is a full-stack application demonstrating a complete authentication system using JWTs. It includes a Node.js/Express backend that handles user registration, login, and session management with token refreshing, and a Vue.js frontend for the user interface. The application also features a simple note-taking functionality where users can create, view, update, and delete their own public or private notes.
 
 ## Features
